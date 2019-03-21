@@ -23,6 +23,7 @@ class Owner(Resource):
         pet = next(filter(lambda x: x['name'] == name, pets), None)
         return ({'pet': pet}, 200 if pet is not None else 404)
 
+    @jwt_required()
     def post(self, name):
         if next(filter(lambda x: x['name'] == name, pets), None):
             return {'message': 'name already taken'}, 400
@@ -38,8 +39,31 @@ class Owner(Resource):
         pets.append(pet)
         return pet, 201
 
+    @jwt_required()
+    def delete(self, name):
+        global pets
+        pets = list(filter(lambda x: x['name'] != name, pets))
+        return {'message': 'Item deleted'}
+
+    @jwt_required()
+    def put(self, name):
+        data = request.get_json()
+        pet = next(filter(lambda x: x['name'] == name, pets), None)
+        if pet is None:
+            pet = {
+                'id': data['id'],
+                'name': name,
+                'race': data['race'],
+                'age': data['age'],
+                'personality': data['personality']
+            }
+            pets.append(pet)
+        else:
+            pet.update(data)
+        return pet
 
 class OwnerList(Resource):
+    @jwt_required()
     def get(self):
         return ({'pets': pets})
 
