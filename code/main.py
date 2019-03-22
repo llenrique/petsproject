@@ -1,5 +1,5 @@
 from flask import Flask, request
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse
 from flask_jwt import JWT, jwt_required
 # JWT Json Web Token
 
@@ -17,7 +17,20 @@ jwt = JWT(app, authenticate, identity)
 pets = []
 
 
-class Owner(Resource):
+class Pet(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('race', type=str, required=True,
+                        help="This field is required")
+
+    parser.add_argument('id', type=int, required=True,
+                        help="This field is required")
+
+    parser.add_argument('age', type=int, required=True,
+                        help="This field is required")
+
+    parser.add_argument('personality', type=str, required=True,
+                        help="This field is required")
+
     @jwt_required()
     def get(self, name):
         pet = next(filter(lambda x: x['name'] == name, pets), None)
@@ -28,7 +41,8 @@ class Owner(Resource):
         if next(filter(lambda x: x['name'] == name, pets), None):
             return {'message': 'name already taken'}, 400
 
-        data = request.get_json(silent=True)
+        data = Pet.parser.parse_args()
+
         pet = {
             'id': data['id'],
             'name': name,
@@ -47,7 +61,7 @@ class Owner(Resource):
 
     @jwt_required()
     def put(self, name):
-        data = request.get_json()
+        data = Pet.parser.parse_args()
         pet = next(filter(lambda x: x['name'] == name, pets), None)
         if pet is None:
             pet = {
@@ -62,14 +76,15 @@ class Owner(Resource):
             pet.update(data)
         return pet
 
-class OwnerList(Resource):
+
+class PetsList(Resource):
     @jwt_required()
     def get(self):
         return ({'pets': pets})
 
 
-api.add_resource(Owner, '/pet/<string:name>')
-api.add_resource(OwnerList, '/pets')
+api.add_resource(Pet, '/pet/<string:name>')
+api.add_resource(PetsList, '/pets')
 
 
 if __name__ == '__main__':
